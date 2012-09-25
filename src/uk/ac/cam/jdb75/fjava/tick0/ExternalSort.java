@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -130,36 +131,38 @@ public class ExternalSort {
         int numberOfIntsInFile = (int) fileA.length()/4;
         int blockSize = alreadySorted*2;
 
-        RandomAccessFile activeInput = fileA;
-        RandomAccessFile activeInput2 = fileA2;
-        RandomAccessFile activeOutput = fileB;
+        multipleWayMergeToFile(fileA, fileA2, alreadySorted/2);
 
-        while (blockSize/2 <= numberOfIntsInFile){
-
-            for (int i = 0; i < numberOfIntsInFile; i += blockSize){
-                mergeToFile(activeInput, activeInput2, activeOutput, blockSize, i);
-            }
-
-            blockSize *= 2;
-            fileA.seek(0);
-            fileA2.seek(0);
-            fileB.seek(0);
-
-            if (activeInput == fileA) {
-                activeInput = fileB;
-                activeInput2 = fileB2;
-                activeOutput = fileA;
-            } else {
-                activeInput = fileA;
-                activeInput2 = fileA2;
-                activeOutput = fileB;
-            }
-        }
-
-        // Now, if finished in B, copy across to A (accounting for final switch of activeOutput)
-        if (activeOutput == fileA) {
-            copyFile(fileB, fileA);
-        }
+//        RandomAccessFile activeInput = fileA;
+//        RandomAccessFile activeInput2 = fileA2;
+//        RandomAccessFile activeOutput = fileB;
+//
+//        while (blockSize/2 <= numberOfIntsInFile){
+//
+//            for (int i = 0; i < numberOfIntsInFile; i += blockSize){
+//                mergeToFile(activeInput, activeInput2, activeOutput, blockSize, i);
+//            }
+//
+//            blockSize *= 2;
+//            fileA.seek(0);
+//            fileA2.seek(0);
+//            fileB.seek(0);
+//
+//            if (activeInput == fileA) {
+//                activeInput = fileB;
+//                activeInput2 = fileB2;
+//                activeOutput = fileA;
+//            } else {
+//                activeInput = fileA;
+//                activeInput2 = fileA2;
+//                activeOutput = fileB;
+//            }
+//        }
+//
+//        // Now, if finished in B, copy across to A (accounting for final switch of activeOutput)
+//        if (activeOutput == fileA) {
+//            copyFile(fileB, fileA);
+//        }
 
     }
 
@@ -247,6 +250,73 @@ public class ExternalSort {
             }
         }
         outputStream.flush();
+    }
+
+    public static void multipleWayMergeToFile(RandomAccessFile inputFile, RandomAccessFile outputFile, int numberOfIntsInBlock) throws IOException{
+        FileDescriptor inputFD = inputFile.getFD();
+        DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile.getFD())));
+
+        int totalIntsInFile = (int) inputFile.length()/4;
+        int numberOfBlocks = totalIntsInFile/numberOfIntsInBlock;
+
+        Integer[] firstInts = new Integer[numberOfBlocks];
+        StreamBlock[] inputStreams = new StreamBlock[numberOfBlocks];
+
+        System.out.println("Number of ints in file = " + totalIntsInFile + ", numberOfBlocks = " + numberOfBlocks);
+
+        for (int i = 0; i < numberOfBlocks; i++){
+            StreamBlock newStreamBlock = new StreamBlock(i*numberOfIntsInBlock, numberOfIntsInBlock, inputFile);
+            inputStreams[i] = newStreamBlock;
+            firstInts[i] = newStreamBlock.getHead();
+        }
+
+        int[] writeCount = new int[numberOfBlocks];
+        Arrays.fill(writeCount, 0);
+        int indexSmallest;
+        int valSmallest;
+        for (int i = 0; i < totalIntsInFile; i++){
+            System.out.println("First ints: " + Arrays.toString(firstInts));
+            System.out.println("WriteCount: " + Arrays.toString(writeCount));
+            indexSmallest = chooseSmallestIndex(firstInts);
+            if (indexSmallest == -1){
+                break;
+            }
+
+            valSmallest = firstInts[indexSmallest];
+
+            outputStream.writeInt(valSmallest);
+            System.out.println("Wrote " + valSmallest);
+            writeCount[indexSmallest] += 1;
+
+            if (writeCount[indexSmallest] >= numberOfIntsInBlock){
+                inputStreams[indexSmallest] = null;
+                firstInts[indexSmallest] = null;
+            } else {
+                inputStreams[indexSmallest].advance();
+                firstInts[indexSmallest] = inputStreams[indexSmallest].getHead();
+            }
+
+
+        }
+        outputStream.flush();
+
+    }
+
+    private static int chooseSmallestIndex(Integer[] array){
+        Integer temp = null;
+        int index = -1;
+        int num;
+        for (int i = 0; i < array.length; i++){
+            if (array[i] != null) {
+                num = array[i];
+                if (temp == null || num < temp) {
+                    temp = num;
+                    index = i;
+                }
+            }
+
+        }
+        return index;
     }
 
     private static String byteToHex(byte b) {

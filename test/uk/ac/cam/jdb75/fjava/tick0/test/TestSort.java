@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -15,49 +16,17 @@ public class TestSort {
 
     RandomAccessFile file1;
     RandomAccessFile file2;
+    int[] vals = {9,8,7,1,0,4,5,2,6,3};
 
     @Before
     public void setUp() throws Exception {
         this.file1 = new RandomAccessFile("example1", "rw");
         this.file2 = new RandomAccessFile("example2", "rw");
 
-        file1.writeInt(3);
-//        file1.writeInt(4);
-//        file1.writeInt(1);
-//        file1.writeInt(2);
-//        file1.writeInt(7);
-//        file1.writeInt(5);
-//        file1.writeInt(9);
-//        file1.writeInt(6);
-//        file1.writeInt(10);
-//        file1.writeInt(3);
-//        file1.writeInt(4);
-//        file1.writeInt(1);
-//        file1.writeInt(2);
-//        file1.writeInt(7);
-//        file1.writeInt(5);
-//        file1.writeInt(9);
-//        file1.writeInt(6);
-        //file1.setLength(17*4);
-
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-//        file2.writeInt(0);
-        file2.writeInt(0);
-        //file2.setLength(17*4);
+        for (int val : vals){
+            file1.writeInt(val);
+            file2.writeInt(0);
+        }
 
         file1.seek(0);
         file2.seek(0);
@@ -69,40 +38,15 @@ public class TestSort {
         ExternalSort.sort("example1", "example2");
 
         file1.seek(0);
-        int val = file1.readInt();
-//        assertEquals(1, val);
-//        val = file1.readInt();
-//        assertEquals(1, val);
-//        val = file1.readInt();
-//        assertEquals(2, val);
-//        val = file1.readInt();
-//        assertEquals(2, val);
-//        val = file1.readInt();
-        assertEquals(3, val);
-        //val = file1.readInt();
-//        assertEquals(3, val);
-//        val = file1.readInt();
-//        assertEquals(4, val);
-//        val = file1.readInt();
-//        assertEquals(4, val);
-//        val = file1.readInt();
-//        assertEquals(5, val);
-//        val = file1.readInt();
-//        assertEquals(5, val);
-//        val = file1.readInt();
-//        assertEquals(6, val);
-//        val = file1.readInt();
-//        assertEquals(6, val);
-//        val = file1.readInt();
-//        assertEquals(7, val);
-//        val = file1.readInt();
-//        assertEquals(7, val);
-//        val = file1.readInt();
-//        assertEquals(9, val);
-//        val = file1.readInt();
-//        assertEquals(9, val);
-//        val = file1.readInt();
-//        assertEquals(10, val);
+
+        Arrays.sort(vals);
+
+        int temp;
+        for (int val : vals){
+            temp = file1.readInt();
+            assertEquals(val, temp);
+        }
+
     }
 
 }
