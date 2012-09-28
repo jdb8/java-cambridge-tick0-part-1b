@@ -53,7 +53,8 @@ public class ExternalSort {
             double a1Length = a1.length();
             System.out.println("File is too big to sort in one go, it's " + a1Length + " bytes long!");
             memory = Runtime.getRuntime().freeMemory();
-            byteNum = (int) (memory/8);
+            //byteNum = (int) (memory/8);
+            byteNum = 100000;
             intNum = byteNum/4;
 
             for (int i = 0; i <= (int)a1Length/4; i += intNum){
@@ -127,11 +128,12 @@ public class ExternalSort {
         if (alreadySorted >= fileLength/4){
             return;
         }
+        //int alreadySorted = 2;
 
         int numberOfIntsInFile = (int) fileA.length()/4;
         int blockSize = alreadySorted*2;
 
-        multipleWayMergeToFile(fileA, fileA2, alreadySorted/2);
+        multipleWayMergeToFile(f1, f1, alreadySorted/2);
 
 //        RandomAccessFile activeInput = fileA;
 //        RandomAccessFile activeInput2 = fileA2;
@@ -252,72 +254,80 @@ public class ExternalSort {
         outputStream.flush();
     }
 
-    public static void multipleWayMergeToFile(RandomAccessFile inputFile, RandomAccessFile outputFile, int numberOfIntsInBlock) throws IOException{
+    public static void multipleWayMergeToFile(String inputFileName, String outputFileName, int numberOfIntsInBlock) throws IOException{
+        RandomAccessFile inputFile = new RandomAccessFile(inputFileName, "r");
+        RandomAccessFile outputFile = new RandomAccessFile(outputFileName, "rw");
         FileDescriptor inputFD = inputFile.getFD();
         DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile.getFD())));
 
         int totalIntsInFile = (int) inputFile.length()/4;
-        int numberOfBlocks = totalIntsInFile/numberOfIntsInBlock;
+        int numberOfBlocks = (totalIntsInFile/numberOfIntsInBlock);
 
-        Integer[] firstInts = new Integer[numberOfBlocks];
-        StreamBlock[] inputStreams = new StreamBlock[numberOfBlocks];
+        StreamMinHeap heap = new StreamMinHeap(numberOfBlocks+1);
+        //StreamBlock[] inputStreams = new StreamBlock[numberOfBlocks];
 
-        System.out.println("Number of ints in file = " + totalIntsInFile + ", numberOfBlocks = " + numberOfBlocks);
+        System.out.println("Number of ints in file = " + totalIntsInFile + ", numberOfBlocks = " + numberOfBlocks + ", intsInBlock = " + numberOfIntsInBlock);
 
-        for (int i = 0; i < numberOfBlocks; i++){
-            StreamBlock newStreamBlock = new StreamBlock(i*numberOfIntsInBlock, numberOfIntsInBlock, inputFile);
-            inputStreams[i] = newStreamBlock;
-            firstInts[i] = newStreamBlock.getHead();
+        for (int i = 0; i <= numberOfBlocks; i++){
+            try {
+                StreamBlock newStreamBlock = new StreamBlock(i*numberOfIntsInBlock, numberOfIntsInBlock, inputFileName);
+                heap.insert(newStreamBlock);
+            } catch (EOFException e){
+                System.out.println("EOF IN STREAM BLOCK CONSTRUCTOR");
+            }
+
+            //System.out.println("Inserted a streamblock");
         }
 
-        int[] writeCount = new int[numberOfBlocks];
-        Arrays.fill(writeCount, 0);
-        int indexSmallest;
-        int valSmallest;
+        System.out.println("heap size: " + heap.size());
+
+        int valSmallest = 0;
+        int written = 0;
         for (int i = 0; i < totalIntsInFile; i++){
-            System.out.println("First ints: " + Arrays.toString(firstInts));
-            System.out.println("WriteCount: " + Arrays.toString(writeCount));
-            indexSmallest = chooseSmallestIndex(firstInts);
-            if (indexSmallest == -1){
-                break;
+            //System.out.println("Heap: " + heap);
+
+            try{
+                if (valSmallest != 100){
+                    //System.out.println(heap);
+                    //System.out.println("Wrote " + valSmallest);
+                }
+                valSmallest = heap.removeMin();
+                outputStream.writeInt(valSmallest);
+                heap.addNextInt();
+
+
+
+                written += 1;
+            } catch(RuntimeException e){
+                System.out.println("had to break: " + e.getMessage());
             }
+            //valSmallest = 1;
 
-            valSmallest = firstInts[indexSmallest];
-
-            outputStream.writeInt(valSmallest);
-            System.out.println("Wrote " + valSmallest);
-            writeCount[indexSmallest] += 1;
-
-            if (writeCount[indexSmallest] >= numberOfIntsInBlock){
-                inputStreams[indexSmallest] = null;
-                firstInts[indexSmallest] = null;
-            } else {
-                inputStreams[indexSmallest].advance();
-                firstInts[indexSmallest] = inputStreams[indexSmallest].getHead();
-            }
 
 
         }
         outputStream.flush();
+        System.out.println("At end: Number of ints written = " + written + ", number in file = " + totalIntsInFile + ", blockSize = " + numberOfIntsInBlock);
+        System.out.println("Final heap: " + heap);
 
     }
 
-    private static int chooseSmallestIndex(Integer[] array){
-        Integer temp = null;
-        int index = -1;
-        int num;
-        for (int i = 0; i < array.length; i++){
-            if (array[i] != null) {
-                num = array[i];
-                if (temp == null || num < temp) {
-                    temp = num;
-                    index = i;
-                }
-            }
-
-        }
-        return index;
-    }
+//    private static int chooseSmallestIndex(MinHeap heap){
+//        Integer temp = null;
+//        int index = -1;
+//        int num;
+//        for (int i = 0; i < heap.length; i++){
+//            if (heap[i] != null) {
+//                num = heap[i];
+//                if (temp == null || num < temp) {
+//                    temp = num;
+//                    index = i;
+//                }
+//            }
+//
+//        }
+//        return index;
+//    }
 
     private static String byteToHex(byte b) {
         String r = Integer.toHexString(b);

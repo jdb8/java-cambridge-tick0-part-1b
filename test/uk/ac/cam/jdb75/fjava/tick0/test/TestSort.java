@@ -16,7 +16,8 @@ public class TestSort {
 
     RandomAccessFile file1;
     RandomAccessFile file2;
-    int[] vals = {9,8,7,1,0,4,5,2,6,3};
+    int[] vals = {2,4,1,5,7,9,4,8,0,3,10,20,12,14,44,57,2,7,3};
+    //int[] vals = {5,7,1,0,9,8,2,3};
 
     @Before
     public void setUp() throws Exception {
