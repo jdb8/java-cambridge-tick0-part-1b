@@ -29,7 +29,7 @@ public class StreamBlock {
         data.skipBytes(startIntOfBlock*4);
 
         advance();
-        System.out.println("Instantiated new StreamBlock");
+        //System.out.println("Instantiated new StreamBlock");
 
     }
 
@@ -37,17 +37,18 @@ public class StreamBlock {
         return this.numberOfInts;
     }
 
-    public void advance() throws IOException, EOFException {
+    public void advance() throws IOException, EOFException{
         if (readCount >= numberOfInts){
             file.close();
             data.close();
-            throw new EOFException("End of block, read " + readCount + " ints total");
+            throw new EOFException();
         } else {
             //file.seek(0);
 
             head = data.readInt();
             readCount += 1;
             //System.out.println("StreamBlock: set head to " + getHead());
+
         }
 
     }
@@ -60,10 +61,15 @@ public class StreamBlock {
         return this.readCount;
     }
 
-    public int pop() throws EOFException, IOException{
+    public int pop() throws EOFException, IOException, LastIntException{
         int val = getHead();
-        advance();
-        return val;
+        if (readCount == numberOfInts){
+            throw new LastIntException(val);
+        } else {
+            advance();
+            return val;
+        }
+
     }
 
 

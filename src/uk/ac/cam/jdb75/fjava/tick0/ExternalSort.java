@@ -23,9 +23,9 @@ public class ExternalSort {
         int blockSizeAlreadySorted;
 
         RandomAccessFile a1 = new RandomAccessFile(f1,"rw");
-        RandomAccessFile a2 = new RandomAccessFile(f1,"rw");
+        RandomAccessFile b = new RandomAccessFile(f2, "rw");
 
-        DataOutputStream dosA2 = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(a2.getFD())));
+        DataOutputStream dosB = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(b.getFD())));
 
         // Memory reading in java seems to be extremely buggy
         double memory = Runtime.getRuntime().freeMemory();
@@ -43,17 +43,16 @@ public class ExternalSort {
             innerSort(ints);
 
             for (int datum : ints){
-                dosA2.writeInt(datum);
+                dosB.writeInt(datum);
             }
 
-            dosA2.flush();
+            dosB.flush();
             blockSizeAlreadySorted = intNum;
 
         } else {
             double a1Length = a1.length();
             System.out.println("File is too big to sort in one go, it's " + a1Length + " bytes long!");
             memory = Runtime.getRuntime().freeMemory();
-            //byteNum = (int) (memory/8);
             byteNum = 100000;
             intNum = byteNum/4;
 
@@ -63,11 +62,11 @@ public class ExternalSort {
                 innerSort(ints);
 
                 for (int datum: ints){
-                    dosA2.writeInt(datum);
+                    dosB.writeInt(datum);
                 }
 
             }
-            dosA2.flush();
+            dosB.flush();
             blockSizeAlreadySorted = intNum;
 
         }
@@ -79,6 +78,7 @@ public class ExternalSort {
 
     @SuppressWarnings("resource")
     private static int[] extractToArray(RandomAccessFile inputFile, int startInt, int numberOfInts) throws IOException {
+        inputFile.seek(0);
         // Set up a stream for the input file
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile.getFD())));
 
@@ -116,60 +116,28 @@ public class ExternalSort {
     public static void sort(String f1, String f2) throws FileNotFoundException, IOException {
         // Set up RandomAccessFiles for each file
         RandomAccessFile fileA = new RandomAccessFile(f1, "rw");
-        RandomAccessFile fileA2 = new RandomAccessFile(f1, "rw");
-        RandomAccessFile fileB = new RandomAccessFile(f2, "rw");
-        RandomAccessFile fileB2 = new RandomAccessFile(f2, "rw");
 
         long fileLength = fileA.length();
 
-        // Presort it
-        int alreadySorted = preSort(f1, f2);
+        // arbitrary
+        int memory = 400000;
 
-        if (alreadySorted >= fileLength/4){
+        if (memory >= fileLength/4){
+            preSort(f1, f1);
             return;
+        } else {
+            int alreadySorted = preSort(f1, f2);
+            multipleWayMergeToFile(f2, f1, alreadySorted/2);
         }
-        //int alreadySorted = 2;
 
-        int numberOfIntsInFile = (int) fileA.length()/4;
-        int blockSize = alreadySorted*2;
-
-        multipleWayMergeToFile(f1, f1, alreadySorted/2);
-
-//        RandomAccessFile activeInput = fileA;
-//        RandomAccessFile activeInput2 = fileA2;
-//        RandomAccessFile activeOutput = fileB;
-//
-//        while (blockSize/2 <= numberOfIntsInFile){
-//
-//            for (int i = 0; i < numberOfIntsInFile; i += blockSize){
-//                mergeToFile(activeInput, activeInput2, activeOutput, blockSize, i);
-//            }
-//
-//            blockSize *= 2;
-//            fileA.seek(0);
-//            fileA2.seek(0);
-//            fileB.seek(0);
-//
-//            if (activeInput == fileA) {
-//                activeInput = fileB;
-//                activeInput2 = fileB2;
-//                activeOutput = fileA;
-//            } else {
-//                activeInput = fileA;
-//                activeInput2 = fileA2;
-//                activeOutput = fileB;
-//            }
-//        }
-//
-//        // Now, if finished in B, copy across to A (accounting for final switch of activeOutput)
-//        if (activeOutput == fileA) {
-//            copyFile(fileB, fileA);
-//        }
 
     }
 
     @SuppressWarnings("resource")
-    private static void copyFile(RandomAccessFile inputFile, RandomAccessFile outputFile) throws IOException {
+    private static void copyFile(String inputFileName, String outputFileName) throws IOException {
+        RandomAccessFile inputFile = new RandomAccessFile(inputFileName, "rw");
+        RandomAccessFile outputFile = new RandomAccessFile(outputFileName, "rw");
+
         // Copy contents of inputFile to outputFile
         inputFile.seek(0);
         outputFile.seek(0);
@@ -281,34 +249,35 @@ public class ExternalSort {
 
         System.out.println("heap size: " + heap.size());
 
+        StreamBlock streamSmallest = null;
         int valSmallest = 0;
         int written = 0;
         for (int i = 0; i < totalIntsInFile; i++){
-            //System.out.println("Heap: " + heap);
-
             try{
-                if (valSmallest != 100){
-                    //System.out.println(heap);
+                try{
+                    streamSmallest = heap.removeMin();
+                    valSmallest = streamSmallest.pop();
+                    heap.insert(streamSmallest);
+                } catch (LastIntException e){
+                    valSmallest = e.lastInt;
+                    //System.out.println("Last int is " + valSmallest);
+                } catch (EOFException e){
+                    // block ended prematurely, get last integer
+                    valSmallest = streamSmallest.getHead();
+                } finally {
+                    outputStream.writeInt(valSmallest);
                     //System.out.println("Wrote " + valSmallest);
+                    written += 1;
                 }
-                valSmallest = heap.removeMin();
-                outputStream.writeInt(valSmallest);
-                heap.addNextInt();
-
-
-
-                written += 1;
             } catch(RuntimeException e){
                 System.out.println("had to break: " + e.getMessage());
+            } catch(EOFException e){
+                System.out.println("Non-full block");
             }
-            //valSmallest = 1;
-
-
-
         }
         outputStream.flush();
         System.out.println("At end: Number of ints written = " + written + ", number in file = " + totalIntsInFile + ", blockSize = " + numberOfIntsInBlock);
-        System.out.println("Final heap: " + heap);
+        //System.out.println("Final heap: " + heap);
 
     }
 

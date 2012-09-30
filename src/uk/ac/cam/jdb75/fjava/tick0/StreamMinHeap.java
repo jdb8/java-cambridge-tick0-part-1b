@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class StreamMinHeap {
 
-    private int[] data;
+    //private int[] data;
     //private int[] dataReadCount;
     private int nodeCount = 0;
     private StreamBlock[] streams;
@@ -15,10 +15,10 @@ public class StreamMinHeap {
     private StreamBlock[] expiredStreams;
 
     public StreamMinHeap(int size){
-        data = new int[size];
+        //data = new int[size];
         //dataReadCount = new int[size];
         streams = new StreamBlock[size];
-        expiredStreams = new StreamBlock[size];
+        //expiredStreams = new StreamBlock[size];
     }
 
     public int size(){
@@ -29,16 +29,16 @@ public class StreamMinHeap {
         return nodeCount == 0;
     }
 
-    private void swapInt(int[] data, int a, int b){
-        int temp = data[a];
-        data[a] = data[b];
-        data[b] = temp;
-    }
+//    private void swapInt(int[] data, int a, int b){
+//        int temp = data[a];
+//        data[a] = data[b];
+//        data[b] = temp;
+//    }
 
-    private void swapStream(StreamBlock[] data, int a, int b){
-        StreamBlock temp = data[a];
-        data[a] = data[b];
-        data[b] = temp;
+    private void swapStream(int a, int b){
+        StreamBlock temp = streams[a];
+        streams[a] = streams[b];
+        streams[b] = temp;
     }
 
     private int min(){
@@ -46,7 +46,7 @@ public class StreamMinHeap {
             throw new RuntimeException("Heap is currently empty");
         }
 
-        return data[0];
+        return streams[0].getHead();
     }
 
     private void heapifyUp(int index){
@@ -55,21 +55,20 @@ public class StreamMinHeap {
             // index-1/2 will always give the parent (int/int = int)
             int parentIndex = (index-1)/2;
 
-            if (data[parentIndex] > data[index]){
-                swapInt(data, index, parentIndex);
+            if (streams[parentIndex].getHead() > streams[index].getHead()){
+                //swapInt(data, index, parentIndex);
                 //swapInt(dataReadCount, index, parentIndex);
-                swapStream(streams, index, parentIndex);
+                swapStream(index, parentIndex);
                 heapifyUp(parentIndex);
             }
         }
     }
 
     public void insert(StreamBlock streamBlock){
-        if (nodeCount == data.length){
+        if (nodeCount == streams.length){
             throw new RuntimeException("Heap is full");
         }
 
-        data[nodeCount] = streamBlock.getHead();
         streams[nodeCount] = streamBlock;
         //dataReadCount[nodeCount] = streamBlock.getReadCount();
         heapifyUp(nodeCount);
@@ -85,26 +84,22 @@ public class StreamMinHeap {
             return;
         }
 
-        int smallestChildIndex = (data[leftChildIndex] <= data[rightChildIndex]) ? leftChildIndex : rightChildIndex;
+        int smallestChildIndex = (streams[leftChildIndex].getHead() <= streams[rightChildIndex].getHead()) ? leftChildIndex : rightChildIndex;
 
-        if (data[index] > data[smallestChildIndex]){
-            swapInt(data, index, smallestChildIndex);
-            swapStream(streams, index, smallestChildIndex);
+        if (streams[index].getHead() > streams[smallestChildIndex].getHead()){
+            swapStream(index, smallestChildIndex);
             //swapInt(dataReadCount, index, smallestChildIndex);
             // Potentially misplaced element is now at index = smallestChildIndex
             heapify(smallestChildIndex);
         }
     }
 
-    public int removeMin(){
+    public StreamBlock removeMin(){
         if (isEmpty()){
             throw new RuntimeException("Heap is currently empty");
         }
 
-        int min = data[0];
-        lastAccessedStreamIndex = 0;
-        lastAccessedStream = streams[0];
-        data[0] = data[nodeCount-1];
+        StreamBlock min = streams[0];
         streams[0] = streams[nodeCount-1];
 
 
@@ -116,28 +111,28 @@ public class StreamMinHeap {
     }
 
     // this bit is the bit that's wrong, not taking into account if stream is still there, don't just insert
-    public void addNextInt(){
-        try {
-            lastAccessedStream.advance();
-            insert(lastAccessedStream);
-        } catch (EOFException e) {
-            //System.out.println("Stream exhausted");
-            System.out.println(e.getMessage());
-            expiredStreams[lastAccessedStreamIndex] = lastAccessedStream;
-            return;
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-    }
+//    public void addNextInt(){
+//        try {
+//            lastAccessedStream.advance();
+//            insert(lastAccessedStream);
+//        } catch (EOFException e) {
+//            //System.out.println("Stream exhausted");
+//            System.out.println(e.getMessage());
+//            expiredStreams[lastAccessedStreamIndex] = lastAccessedStream;
+//            return;
+//        } catch (IOException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+//
+//    }
 
     public String toString(){
         int[] readCountArray = new int[expiredStreams.length];
         for (int i = 0; i<nodeCount; i++){
             readCountArray[i] = expiredStreams[i].getReadCount();
         }
-        return Arrays.toString(data) + Arrays.toString(readCountArray);
+        return Arrays.toString(streams) + Arrays.toString(readCountArray);
     }
 
 //    /** Test Method */

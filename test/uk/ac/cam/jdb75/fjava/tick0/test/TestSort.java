@@ -16,15 +16,14 @@ public class TestSort {
 
     RandomAccessFile file1;
     RandomAccessFile file2;
-    int[] vals = {2,4,1,5,7,9,4,8,0,3,10,20,12,14,44,57,2,7,3};
-    //int[] vals = {5,7,1,0,9,8,2,3};
+    int[] vals2 = {5,7,0,1,8,9,2,3,4,6};
 
     @Before
     public void setUp() throws Exception {
         this.file1 = new RandomAccessFile("example1", "rw");
         this.file2 = new RandomAccessFile("example2", "rw");
 
-        for (int val : vals){
+        for (int val : vals2){
             file1.writeInt(val);
             file2.writeInt(0);
         }
@@ -36,14 +35,14 @@ public class TestSort {
 
     @Test
     public void test() throws FileNotFoundException, IOException {
-        ExternalSort.sort("example1", "example2");
+        ExternalSort.multipleWayMergeToFile("example1", "example1", 2);
 
         file1.seek(0);
 
-        Arrays.sort(vals);
+        Arrays.sort(vals2);
 
         int temp;
-        for (int val : vals){
+        for (int val : vals2){
             temp = file1.readInt();
             assertEquals(val, temp);
         }
