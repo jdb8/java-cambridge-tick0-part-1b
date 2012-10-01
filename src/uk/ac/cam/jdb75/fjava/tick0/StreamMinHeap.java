@@ -10,8 +10,6 @@ public class StreamMinHeap {
     //private int[] dataReadCount;
     private int nodeCount = 0;
     private StreamBlock[] streams;
-    private int lastAccessedStreamIndex;
-    private StreamBlock lastAccessedStream;
     private StreamBlock[] expiredStreams;
 
     public StreamMinHeap(int size){
@@ -39,14 +37,6 @@ public class StreamMinHeap {
         StreamBlock temp = streams[a];
         streams[a] = streams[b];
         streams[b] = temp;
-    }
-
-    private int min(){
-        if (isEmpty()){
-            throw new RuntimeException("Heap is currently empty");
-        }
-
-        return streams[0].getHead();
     }
 
     private void heapifyUp(int index){
@@ -110,40 +100,4 @@ public class StreamMinHeap {
         return min;
     }
 
-    // this bit is the bit that's wrong, not taking into account if stream is still there, don't just insert
-//    public void addNextInt(){
-//        try {
-//            lastAccessedStream.advance();
-//            insert(lastAccessedStream);
-//        } catch (EOFException e) {
-//            //System.out.println("Stream exhausted");
-//            System.out.println(e.getMessage());
-//            expiredStreams[lastAccessedStreamIndex] = lastAccessedStream;
-//            return;
-//        } catch (IOException e) {
-//            // TODO Auto-generated catch block
-//            e.printStackTrace();
-//        }
-//
-//    }
-
-    public String toString(){
-        int[] readCountArray = new int[expiredStreams.length];
-        for (int i = 0; i<nodeCount; i++){
-            readCountArray[i] = expiredStreams[i].getReadCount();
-        }
-        return Arrays.toString(streams) + Arrays.toString(readCountArray);
-    }
-
-//    /** Test Method */
-//    public static void main( String[ ] args ) {
-//
-//        int[ ] input = { 6, 5, 3, 1, 8, 7, 2, 4 };
-//        StreamMinHeap heap = new StreamMinHeap( input.length );
-//        for( int i = 0; i < input.length; i++ ) {
-//            heap.insert( input[ i ], null );
-//        }
-//
-//        System.out.println(heap);
-//    }
 }

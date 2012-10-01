@@ -35,7 +35,8 @@ public class TestSort {
 
     @Test
     public void test() throws FileNotFoundException, IOException {
-        ExternalSort.multipleWayMergeToFile("example1", "example1", 2);
+        //ExternalSort.multipleWayMergeToFile("example1", "example1", 2);
+        ExternalSort.sort("example1", "example2");
 
         file1.seek(0);
 

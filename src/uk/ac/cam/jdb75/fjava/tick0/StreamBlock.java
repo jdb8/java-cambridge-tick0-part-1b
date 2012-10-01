@@ -14,15 +14,12 @@ public class StreamBlock {
     private int head;
     private RandomAccessFile file;
     private DataInputStream data;
-    private int startIntOfBlock;
     private int readCount = 0;
     private int numberOfInts;
     private byte[] byteArray;
-    private boolean canWrite = true;
 
     public StreamBlock(int startIntOfBlock, int numOfIntsInBlock, String fileName) throws IOException, EOFException{
         file = new RandomAccessFile(fileName, "r");
-        this.startIntOfBlock = startIntOfBlock;
         data = new DataInputStream(new BufferedInputStream(new FileInputStream(file.getFD())));
         numberOfInts = numOfIntsInBlock;
 
@@ -30,6 +27,28 @@ public class StreamBlock {
 
         advance();
         //System.out.println("Instantiated new StreamBlock");
+
+    }
+
+    private int popIntFromByteArray(){
+        byte[] temp = {byteArray[0], byteArray[1], byteArray[2], byteArray[3]};
+        int val = ExternalSort.byteArrayToInt(temp);
+
+        int newLength = byteArray.length - 4;
+        if (newLength == 0){
+            this.byteArray = null;
+        } else {
+            byte[] newArray = new byte[newLength];
+
+            int length = newArray.length;
+            for (int i = 0; i < length; i++){
+                newArray[i] = byteArray[4+i];
+            }
+
+            this.byteArray = newArray;
+        }
+
+        return val;
 
     }
 
@@ -43,11 +62,16 @@ public class StreamBlock {
             data.close();
             throw new EOFException();
         } else {
-            //file.seek(0);
+            if (byteArray == null || byteArray.length == 0){
+                byteArray = new byte[20];
+                int test = data.read(byteArray, 0, 20);
+                if (test == -1){
+                    throw new EOFException();
+                }
+            }
 
-            head = data.readInt();
-            readCount += 1;
-            //System.out.println("StreamBlock: set head to " + getHead());
+            head = popIntFromByteArray();
+            readCount++;
 
         }
 
@@ -63,6 +87,7 @@ public class StreamBlock {
 
     public int pop() throws EOFException, IOException, LastIntException{
         int val = getHead();
+
         if (readCount == numberOfInts){
             throw new LastIntException(val);
         } else {
