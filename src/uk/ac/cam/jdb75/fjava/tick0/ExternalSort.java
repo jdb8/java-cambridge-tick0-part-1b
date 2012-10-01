@@ -83,7 +83,7 @@ public class ExternalSort {
         return blockSizeAlreadySorted;
     }
 
-    private static int[] byteArrayToIntArray(byte[] array){
+    protected static int[] byteArrayToIntArray(byte[] array){
         int[] intArray = new int[array.length/4];
         int intIndex = 0;
         byte[] temp = new byte[4];
@@ -279,7 +279,7 @@ public class ExternalSort {
         sort(f1, f2);
         //long end = System.currentTimeMillis();
         //System.out.println("Execution time was "+(end-start)/1000+"s.");
-        System.out.println("The checksum is: "+checkSum(f1));
+        //System.out.println("The checksum is: "+checkSum(f1));
     }
 
 }
