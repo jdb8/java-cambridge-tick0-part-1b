@@ -39,29 +39,6 @@ public class StreamBlock {
         return val;
     }
 
-//    private int popIntFromByteArray(){
-//        byteTemp[0] =
-//        int val = ExternalSort.byteArrayToInt(temp);
-//
-//
-//        int newLength = byteArray.length - 4;
-//        if (newLength == 0){
-//            this.byteArray = null;
-//        } else {
-//            byte[] newArray = new byte[newLength];
-//
-//            int length = newArray.length;
-//            for (int i = 0; i < length; i++){
-//                newArray[i] = byteArray[4+i];
-//            }
-//
-//            this.byteArray = newArray;
-//        }
-//
-//        return val;
-//
-//    }
-
     public int getBlockSize(){
         return this.numberOfInts;
     }

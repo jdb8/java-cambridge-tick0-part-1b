@@ -197,7 +197,8 @@ public class ExternalSort {
 
         StreamBlock streamSmallest = null;
         int valSmallest = 0;
-        byte[] byteArray = new byte[400];
+        int buffer = 40000;
+        byte[] byteArray = new byte[buffer];
         byte[] temp;
         int bytePosition = 0;
         for (int i = 0; i < totalIntsInFile; i++){
@@ -213,9 +214,9 @@ public class ExternalSort {
                     // block ended prematurely, get last integer
                     valSmallest = streamSmallest.getHead();
                 } finally {
-                    if (i % 100 == 0 && i != 0){
+                    if (i % (buffer/4) == 0 && i != 0){
                         outputStream.write(byteArray);
-                        byteArray = new byte[400];
+                        byteArray = new byte[buffer];
                         bytePosition = 0;
                     }
                     temp = intToByteArray(valSmallest);
