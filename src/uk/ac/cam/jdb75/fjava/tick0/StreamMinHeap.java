@@ -78,6 +78,7 @@ public class StreamMinHeap {
 
         while (streams[index].getHead() > streams[smallestChildIndex].getHead()){
             swapStream(index, smallestChildIndex);
+            index = smallestChildIndex;
             
             leftChildIndex = 2*index + 1;
             rightChildIndex = 2*index + 2;
