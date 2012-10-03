@@ -1,22 +1,11 @@
 package uk.ac.cam.jdb75.fjava.tick0;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.util.Arrays;
-
 public class StreamMinHeap {
 
-    //private int[] data;
-    //private int[] dataReadCount;
     private int nodeCount = 0;
     private StreamBlock[] streams;
-    private StreamBlock[] expiredStreams;
-
     public StreamMinHeap(int size){
-        //data = new int[size];
-        //dataReadCount = new int[size];
         streams = new StreamBlock[size];
-        //expiredStreams = new StreamBlock[size];
     }
 
     public int size(){
@@ -26,12 +15,6 @@ public class StreamMinHeap {
     public boolean isEmpty(){
         return nodeCount == 0;
     }
-
-//    private void swapInt(int[] data, int a, int b){
-//        int temp = data[a];
-//        data[a] = data[b];
-//        data[b] = temp;
-//    }
 
     private void swapStream(int a, int b){
         StreamBlock temp = streams[a];
@@ -45,11 +28,12 @@ public class StreamMinHeap {
             // index-1/2 will always give the parent (int/int = int)
             int parentIndex = (index-1)/2;
 
-            if (streams[parentIndex].getHead() > streams[index].getHead()){
-                //swapInt(data, index, parentIndex);
-                //swapInt(dataReadCount, index, parentIndex);
+            while (streams[parentIndex].getHead() > streams[index].getHead()){
                 swapStream(index, parentIndex);
-                heapifyUp(parentIndex);
+                index = parentIndex;
+                if (index > 0) {
+                    parentIndex = (index-1)/2;
+                }                   
             }
         }
     }
@@ -60,10 +44,8 @@ public class StreamMinHeap {
         }
 
         streams[nodeCount] = streamBlock;
-        //dataReadCount[nodeCount] = streamBlock.getReadCount();
         heapifyUp(nodeCount);
         nodeCount++;
-        //System.out.println(toString());
     }
 
     private void heapify(int index){

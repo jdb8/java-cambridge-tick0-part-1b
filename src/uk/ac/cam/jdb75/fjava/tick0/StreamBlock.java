@@ -25,6 +25,8 @@ public class StreamBlock {
         file = new RandomAccessFile(fileName, "r");
         data = new DataInputStream(new BufferedInputStream(new FileInputStream(file.getFD())));
         numberOfInts = numOfIntsInBlock;
+        
+        byteArray = new byte[numberOfInts/4];
 
         data.skipBytes(startIntOfBlock*4);
 
@@ -50,8 +52,7 @@ public class StreamBlock {
             throw new EOFException();
         } else {
             if (intArray == null || intPointer >= intArray.length){
-                byteArray = new byte[numberOfInts/4];
-                int test = data.read(byteArray, 0, numberOfInts/4);
+                int test = data.read(byteArray);
                 if (test == -1){
                     throw new EOFException();
                 }

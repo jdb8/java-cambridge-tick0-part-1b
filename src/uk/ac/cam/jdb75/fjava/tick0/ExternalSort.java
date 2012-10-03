@@ -16,7 +16,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 public class ExternalSort {
-
+    
+    private static byte[] tempInt = new byte[4];
+    private static final int inputBuffer = 400000;
+    private static final int outputBuffer = 40000;
 
     /* from http://stackoverflow.com/a/5399829 */
     protected static int byteArrayToInt(byte[] b) {
@@ -43,19 +46,35 @@ public class ExternalSort {
         RandomAccessFile a1 = new RandomAccessFile(f1,"r");
         RandomAccessFile b = new RandomAccessFile(f2, "rw");
 
+        DataInputStream disA = new DataInputStream(new BufferedInputStream(new FileInputStream(a1.getFD())));
+        
         DataOutputStream dosB = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(b.getFD())));
 
         int byteNum;
         int intNum;
         int[] ints;
+        byte[] bytes;     
+        
 
-        if (length <= 800000) { // divide by something to be safe
+        if (length <= inputBuffer) { // divide by something to be safe
             //System.out.println("File can fit into main memory - sorting in one go");
             byteNum = (int)(a1.length());
             intNum = byteNum/4;
+            
+            bytes = new byte[intNum*4];
+            
+            //System.out.println("Bytenum: " + byteNum + ", intNum: " + intNum + ", intNum*4 = " + intNum*4);
+            
+            disA.read(bytes);
+            
+            ints = byteArrayToIntArray(bytes);
+            
+            
 
-            ints = extractToArray(a1, 0, intNum);
-            innerSort(ints);
+            //ints = extractToArray(a1, 0, intNum);
+            //innerSort(ints);
+            
+            Arrays.sort(ints);
 
             dosB.write(intArrayToByteArray(ints));
 
@@ -64,13 +83,21 @@ public class ExternalSort {
 
         } else {
             //System.out.println("File is too big to sort in one go, it's " + a1Length + " bytes long!");
-            byteNum = 800000;
+            byteNum = inputBuffer;
             intNum = byteNum/4;
+            
+            bytes = new byte[intNum*4];
+            
+            //System.out.println("Bytenum: " + byteNum + ", intNum: " + intNum + ", intNum*4 = " + intNum*4);
 
-            for (int i = 0; i <= (int)length/4; i += intNum){
 
-                ints = extractToArray(a1, i, intNum);
-                innerSort(ints);
+            for (int i = 0; i < (int)length/4; i += intNum){
+                
+                disA.read(bytes);
+                
+                ints = byteArrayToIntArray(bytes);
+                
+                Arrays.sort(ints);
 
                 dosB.write(intArrayToByteArray(ints));
 
@@ -86,23 +113,25 @@ public class ExternalSort {
     protected static int[] byteArrayToIntArray(byte[] array){
         int[] intArray = new int[array.length/4];
         int intIndex = 0;
-        byte[] temp = new byte[4];
         for (int i = 0; i < array.length; i += 4){
-            temp[0] = array[i];
-            temp[1] = array[i+1];
-            temp[2] = array[i+2];
-            temp[3] = array[i+3];
-            intArray[intIndex] = byteArrayToInt(temp);
+            tempInt[0] = array[i];
+            tempInt[1] = array[i+1];
+            tempInt[2] = array[i+2];
+            tempInt[3] = array[i+3];
+            intArray[intIndex] = byteArrayToInt(tempInt);
             intIndex++;
         }
         return intArray;
     }
 
     private static byte[] intArrayToByteArray(int[] array){
-        byte[] byteArray = new byte[array.length*4];
+        int length = array.length;
+        
+        byte[] byteArray = new byte[length*4];
         byte[] temp;
         int byteIndex = 0;
-        for (int i = 0; i < array.length; i++){
+        
+        for (int i = 0; i < length; i++){
             temp = intToByteArray(array[i]);
             byteArray[byteIndex] = temp[0];
             byteArray[byteIndex+1] = temp[1];
@@ -114,51 +143,13 @@ public class ExternalSort {
     }
 
     @SuppressWarnings("resource")
-    private static int[] extractToArray(RandomAccessFile inputFile, int startInt, int numberOfInts) throws IOException {
-
-        // Set up a stream for the input file
-        DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile.getFD())));
-
-        //byte[][] array = new byte[numberOfInts][4];
-        byte[] all = new byte[numberOfInts*4];
-
-        // Skip the input stream to the correct point
-        inputStream.skipBytes(4*startInt);
-
-        int read = 0;
-        try{
-            read = inputStream.read((all), 0, numberOfInts*4);
-        } catch (EOFException e) {
-        }
-
-
-        int[] intArray = byteArrayToIntArray(all);
-
-
-        // Reset the file pointer
-        inputFile.seek(0);
-
-        int[] correctSizeArray = Arrays.copyOf(intArray, read/4);
-
-        return correctSizeArray;
-    }
-
-    private static void innerSort(int[] array) {
-        // quick sort
-        Arrays.sort(array);
-    }
-
-    @SuppressWarnings("resource")
     public static void sort(String f1, String f2) throws FileNotFoundException, IOException {
         // Set up RandomAccessFiles for each file
         RandomAccessFile fileA = new RandomAccessFile(f1, "r");
 
         long fileLength = fileA.length();
 
-        // arbitrary
-        int memory = 800000;
-
-        if (fileLength <= memory){
+        if (fileLength <= inputBuffer){
             preSort(f1, f1, (int)fileLength);
             return;
         } else {
@@ -178,7 +169,6 @@ public class ExternalSort {
         int numberOfBlocks = (totalIntsInFile/numberOfIntsInBlock);
 
         StreamMinHeap heap = new StreamMinHeap(numberOfBlocks+1);
-        //StreamBlock[] inputStreams = new StreamBlock[numberOfBlocks];
 
         //System.out.println("Number of ints in file = " + totalIntsInFile + ", numberOfBlocks = " + numberOfBlocks + ", intsInBlock = " + numberOfIntsInBlock);
 
@@ -197,10 +187,11 @@ public class ExternalSort {
 
         StreamBlock streamSmallest = null;
         int valSmallest = 0;
-        int buffer = 40000;
-        byte[] byteArray = new byte[buffer];
+        int bufferInts = outputBuffer/4;
+        byte[] byteArray = new byte[outputBuffer];
         byte[] temp;
         int bytePosition = 0;
+        //int written = 0;
         for (int i = 0; i < totalIntsInFile; i++){
             try{
                 try{
@@ -214,9 +205,9 @@ public class ExternalSort {
                     // block ended prematurely, get last integer
                     valSmallest = streamSmallest.getHead();
                 } finally {
-                    if (i % (buffer/4) == 0 && i != 0){
+                    if (bytePosition == bufferInts) {
                         outputStream.write(byteArray);
-                        byteArray = new byte[buffer];
+                        //written += byteArray.length/4;
                         bytePosition = 0;
                     }
                     temp = intToByteArray(valSmallest);
@@ -234,6 +225,7 @@ public class ExternalSort {
             }
         }
         outputStream.write(byteArray);
+        //written += byteArray.length/4;
         outputStream.flush();
         //System.out.println("At end: Number of ints written = " + written + ", number in file = " + totalIntsInFile + ", blockSize = " + numberOfIntsInBlock);
         //System.out.println("Final heap: " + heap);
@@ -274,13 +266,7 @@ public class ExternalSort {
     }
 
     public static void main(String[] args) throws Exception {
-        String f1 = args[0];
-        String f2 = args[1];
-        //long start = System.currentTimeMillis();
-        sort(f1, f2);
-        //long end = System.currentTimeMillis();
-        //System.out.println("Execution time was "+(end-start)/1000+"s.");
-        //System.out.println("The checksum is: "+checkSum(f1));
+        sort(args[0], args[1]);
     }
 
 }
