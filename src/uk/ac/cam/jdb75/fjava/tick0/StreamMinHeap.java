@@ -76,11 +76,17 @@ public class StreamMinHeap {
 
         int smallestChildIndex = (streams[leftChildIndex].getHead() <= streams[rightChildIndex].getHead()) ? leftChildIndex : rightChildIndex;
 
-        if (streams[index].getHead() > streams[smallestChildIndex].getHead()){
+        while (streams[index].getHead() > streams[smallestChildIndex].getHead()){
             swapStream(index, smallestChildIndex);
-            //swapInt(dataReadCount, index, smallestChildIndex);
-            // Potentially misplaced element is now at index = smallestChildIndex
-            heapify(smallestChildIndex);
+            
+            leftChildIndex = 2*index + 1;
+            rightChildIndex = 2*index + 2;
+
+            if (leftChildIndex >= nodeCount && rightChildIndex >= nodeCount){
+                return;
+            }
+
+            smallestChildIndex = (streams[leftChildIndex].getHead() <= streams[rightChildIndex].getHead()) ? leftChildIndex : rightChildIndex;
         }
     }
 
