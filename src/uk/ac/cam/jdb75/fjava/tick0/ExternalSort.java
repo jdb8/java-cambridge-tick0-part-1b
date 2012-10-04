@@ -168,11 +168,11 @@ public class ExternalSort {
         int totalIntsInFile = (int) inputFile.length()/4;
         int numberOfBlocks = (totalIntsInFile/numberOfIntsInBlock);
 
-        StreamMinHeap heap = new StreamMinHeap(numberOfBlocks+1);
+        StreamMinHeap heap = new StreamMinHeap(numberOfBlocks);
 
         //System.out.println("Number of ints in file = " + totalIntsInFile + ", numberOfBlocks = " + numberOfBlocks + ", intsInBlock = " + numberOfIntsInBlock);
 
-        for (int i = 0; i <= numberOfBlocks; i++){
+        for (int i = 0; i < numberOfBlocks; i++){
             try {
                 StreamBlock newStreamBlock = new StreamBlock(i*numberOfIntsInBlock, numberOfIntsInBlock, inputFileName);
                 heap.insert(newStreamBlock);
@@ -187,41 +187,37 @@ public class ExternalSort {
 
         StreamBlock streamSmallest = null;
         int valSmallest = 0;
+        
         int bufferInts = outputBuffer/4;
         byte[] byteArray = new byte[outputBuffer];
         byte[] temp;
         int bytePosition = 0;
-        //int written = 0;
-        for (int i = 0; i < totalIntsInFile; i++){
+        
+        //for (int i = 0; i < totalIntsInFile; i++)
+        
+        while(!heap.isEmpty()){
             try{
-                try{
-                    streamSmallest = heap.removeMin();
-                    valSmallest = streamSmallest.pop();
-                    heap.insert(streamSmallest);
-                } catch (LastIntException e){
-                    valSmallest = e.lastInt;
-                    //System.out.println("Last int is " + valSmallest);
-                } catch (EOFException e){
-                    // block ended prematurely, get last integer
-                    valSmallest = streamSmallest.getHead();
-                } finally {
-                    if (bytePosition == bufferInts) {
-                        outputStream.write(byteArray);
-                        //written += byteArray.length/4;
-                        bytePosition = 0;
-                    }
-                    temp = intToByteArray(valSmallest);
-                    byteArray[bytePosition*4] = temp[0];
-                    byteArray[bytePosition*4 + 1] = temp[1];
-                    byteArray[bytePosition*4 + 2] = temp[2];
-                    byteArray[bytePosition*4 + 3] = temp[3];
-                    bytePosition++;
-                    //System.out.println("Wrote " + valSmallest);
+                streamSmallest = heap.removeMin();
+                valSmallest = streamSmallest.pop();
+                heap.insert(streamSmallest);
+            } catch (LastIntException e){
+                valSmallest = e.lastInt;
+                //System.out.println("Last int is " + valSmallest);
+            } catch (EOFException e){
+                // block ended prematurely, get last integer
+                valSmallest = streamSmallest.getHead();
+            } finally {
+                if (bytePosition == bufferInts) {
+                    outputStream.write(byteArray);
+                    bytePosition = 0;
                 }
-            } catch(RuntimeException e){
-                //System.out.println("had to break: " + e.getMessage());
-            } catch(EOFException e){
-                //System.out.println("Non-full block");
+                temp = intToByteArray(valSmallest);
+                byteArray[bytePosition*4] = temp[0];
+                byteArray[bytePosition*4 + 1] = temp[1];
+                byteArray[bytePosition*4 + 2] = temp[2];
+                byteArray[bytePosition*4 + 3] = temp[3];
+                bytePosition++;
+                //System.out.println("Wrote " + valSmallest);
             }
         }
         outputStream.write(byteArray);
@@ -266,7 +262,11 @@ public class ExternalSort {
     }
 
     public static void main(String[] args) throws Exception {
+//        for (int i = 0; i < 5; i++) {
+//            sort("extratests/bigexample"+ i +"a.dat", "extratests/bigexample"+i+"b.dat");
+//        }
         sort(args[0], args[1]);
+        
     }
 
 }
